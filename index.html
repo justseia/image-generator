@@ -196,8 +196,8 @@
     <label class="fld">
       <span class="lbl" data-i18n="l_framestyle">Стиль рамки</span>
       <div class="seg" id="frameStyleSeg">
-        <button data-fr="ios" class="on">iOS</button>
-        <button data-fr="android">Android</button>
+        <button data-fr="ios" class="on">iPhone 17 Pro</button>
+        <button data-fr="android">Pixel 10 Pro</button>
       </div>
     </label>
     <label class="fld">
@@ -364,6 +364,103 @@ function wrapText(ctx,text,maxW){
   return out;
 }
 
+/* ---- realistic device frames (iPhone 17 Pro / Pixel 10 Pro) ---- */
+function metalOverlay(ctx,x,w){
+  const g=ctx.createLinearGradient(x,0,x+w,0);
+  g.addColorStop(0.00,"rgba(255,255,255,0.30)");
+  g.addColorStop(0.05,"rgba(255,255,255,0.04)");
+  g.addColorStop(0.12,"rgba(0,0,0,0.14)");
+  g.addColorStop(0.50,"rgba(255,255,255,0.05)");
+  g.addColorStop(0.88,"rgba(0,0,0,0.14)");
+  g.addColorStop(0.95,"rgba(255,255,255,0.04)");
+  g.addColorStop(1.00,"rgba(255,255,255,0.30)");
+  return g;
+}
+function sideButton(ctx,px,py,pw,ph,side,cyFrac,lenFrac,col){
+  const len=ph*lenFrac, w=pw*0.03, protr=pw*0.010;
+  const y=py+ph*cyFrac;
+  const x = side==="right" ? px+pw-(w-protr) : px-protr;
+  const r=Math.min(w,len)*0.35;
+  ctx.fillStyle=col; roundRectPath(ctx,x,y,w,len,r); ctx.fill();
+  const g=ctx.createLinearGradient(x,y,x,y+len);
+  g.addColorStop(0,"rgba(255,255,255,0.22)");
+  g.addColorStop(0.5,"rgba(255,255,255,0.02)");
+  g.addColorStop(1,"rgba(0,0,0,0.20)");
+  ctx.fillStyle=g; roundRectPath(ctx,x,y,w,len,r); ctx.fill();
+}
+function drawPhone(ctx,o){
+  const {px,py,pw,ph,sx,sy,sw,sh,img,isIOS,frameColor,shadow,font}=o;
+  const outerR = pw*(isIOS?0.155:0.115);
+  const railT  = pw*0.014;
+  const glassR = Math.max(2, outerR-railT);
+  const screenR= Math.max(2, outerR-(sx-px)*0.9);
+
+  // drop shadow (body silhouette)
+  if(shadow){
+    ctx.save();
+    ctx.shadowColor="rgba(0,0,0,.38)"; ctx.shadowBlur=pw*0.10; ctx.shadowOffsetY=pw*0.055;
+    ctx.fillStyle="#000"; roundRectPath(ctx,px,py,pw,ph,outerR); ctx.fill();
+    ctx.restore();
+  }
+
+  // side buttons (behind body → only the nub protrudes)
+  if(isIOS){
+    sideButton(ctx,px,py,pw,ph,"left",0.150,0.045,frameColor);  // Action button
+    sideButton(ctx,px,py,pw,ph,"left",0.235,0.075,frameColor);  // Volume up
+    sideButton(ctx,px,py,pw,ph,"left",0.330,0.075,frameColor);  // Volume down
+    sideButton(ctx,px,py,pw,ph,"right",0.250,0.120,frameColor); // Side button
+    sideButton(ctx,px,py,pw,ph,"right",0.410,0.070,frameColor); // Camera Control
+  } else {
+    sideButton(ctx,px,py,pw,ph,"right",0.220,0.060,frameColor); // Power
+    sideButton(ctx,px,py,pw,ph,"right",0.320,0.120,frameColor); // Volume rocker
+  }
+
+  // metal body / rail
+  ctx.save();
+  roundRectPath(ctx,px,py,pw,ph,outerR); ctx.clip();
+  ctx.fillStyle=frameColor; ctx.fillRect(px,py,pw,ph);
+  ctx.fillStyle=metalOverlay(ctx,px,pw); ctx.fillRect(px,py,pw,ph);
+  ctx.restore();
+
+  // front glass (black bezel)
+  ctx.fillStyle="#000";
+  roundRectPath(ctx,px+railT,py+railT,pw-2*railT,ph-2*railT,glassR); ctx.fill();
+
+  // screen
+  ctx.save();
+  roundRectPath(ctx,sx,sy,sw,sh,screenR); ctx.clip();
+  if(img){ drawCover(ctx,img,sx,sy,sw,sh); }
+  else {
+    ctx.fillStyle="#e9edf3"; ctx.fillRect(sx,sy,sw,sh);
+    ctx.fillStyle="#9aa3b2"; ctx.font=`600 ${sw*0.06}px ${font}`;
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(t("placeholder"), sx+sw/2, sy+sh/2);
+  }
+  const glare=ctx.createLinearGradient(sx,sy,sx+sw*0.55,sy+sh*0.22);
+  glare.addColorStop(0,"rgba(255,255,255,0.10)"); glare.addColorStop(1,"rgba(255,255,255,0)");
+  ctx.fillStyle=glare; ctx.fillRect(sx,sy,sw,sh);
+  ctx.restore();
+
+  // camera cutout
+  if(isIOS){
+    const iw=sw*0.30, ih=sw*0.086, ix=sx+(sw-iw)/2, iy=sy+sw*0.038;
+    ctx.fillStyle="#000"; roundRectPath(ctx,ix,iy,iw,ih,ih/2); ctx.fill();
+    ctx.fillStyle="#0e1420";
+    ctx.beginPath(); ctx.arc(ix+iw-ih*0.62, iy+ih/2, ih*0.30,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#1a2436";
+    ctx.beginPath(); ctx.arc(ix+iw-ih*0.62, iy+ih/2, ih*0.12,0,Math.PI*2); ctx.fill();
+  } else {
+    const r=sw*0.028, cxp=sx+sw/2, cyp=sy+sw*0.055+r;
+    ctx.fillStyle="#000"; ctx.beginPath(); ctx.arc(cxp,cyp,r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle="#101826"; ctx.beginPath(); ctx.arc(cxp,cyp,r*0.55,0,Math.PI*2); ctx.fill();
+  }
+
+  // outer rim highlight
+  ctx.lineWidth=Math.max(1,pw*0.004);
+  ctx.strokeStyle="rgba(255,255,255,0.14)";
+  roundRectPath(ctx,px+ctx.lineWidth/2,py+ctx.lineWidth/2,pw-ctx.lineWidth,ph-ctx.lineWidth,outerR); ctx.stroke();
+}
+
 function drawScene(ctx, slide, preset, frameStyle){
   preset = preset || S.preset;
   frameStyle = frameStyle || S.frameStyle;
@@ -429,52 +526,16 @@ function drawScene(ctx, slide, preset, frameStyle){
   if(tiltR){ const cx=W/2, cy=phoneTop+availH/2; ctx.translate(cx,cy); ctx.rotate(tiltR); ctx.translate(-cx,-cy); }
 
   if(S.frameOn){
-    const bezelR = 0.026;               // bezel thickness / phone width
+    const isIOS = frameStyle==="ios";
+    const ar = img ? screenAR : (isIOS ? 9/19.5 : 9/20);
+    const bezelR = 0.036;               // body edge -> screen (rail + black bezel)
     let pw = availW * (S.phoneScale/100);
     let sw = pw*(1-2*bezelR);
-    let sh = sw/screenAR;
+    let sh = sw/ar;
     let ph = sh + 2*(bezelR*pw);
     if(ph>availH){ const k=availH/ph; pw*=k; sw*=k; sh*=k; ph*=k; }
-    const px=(W-pw)/2, py=phoneTop+(availH-ph)/2;
-    const bez=bezelR*pw;
-    const outerR=pw*0.13, innerR=pw*0.105;
-
-    // shadow
-    if(S.shadowOn){
-      ctx.save();
-      ctx.shadowColor="rgba(0,0,0,.35)";
-      ctx.shadowBlur=pw*0.09; ctx.shadowOffsetY=pw*0.05;
-      ctx.fillStyle=S.frameColor;
-      roundRectPath(ctx,px,py,pw,ph,outerR); ctx.fill();
-      ctx.restore();
-    }
-    // frame
-    ctx.fillStyle=S.frameColor;
-    roundRectPath(ctx,px,py,pw,ph,outerR); ctx.fill();
-
-    // screen
-    const sx=px+bez, sy=py+bez;
-    ctx.save();
-    roundRectPath(ctx,sx,sy,sw,sh,innerR); ctx.clip();
-    if(img){ drawCover(ctx,img,sx,sy,sw,sh); }
-    else {
-      ctx.fillStyle="#e9edf3"; ctx.fillRect(sx,sy,sw,sh);
-      ctx.fillStyle="#9aa3b2";
-      ctx.font=`600 ${sw*0.06}px ${S.font}`;
-      ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText(t("placeholder"), sx+sw/2, sy+sh/2);
-    }
-    ctx.restore();
-
-    // notch / camera
-    ctx.fillStyle="#0a0a0c";
-    if(frameStyle==="ios"){
-      const iw=sw*0.34, ih=pw*0.032, ix=sx+(sw-iw)/2, iy=sy+pw*0.022;
-      roundRectPath(ctx,ix,iy,iw,ih,ih/2); ctx.fill();
-    } else {
-      const r=pw*0.013;
-      ctx.beginPath(); ctx.arc(sx+sw/2, sy+pw*0.03+r, r, 0, Math.PI*2); ctx.fill();
-    }
+    const px=(W-pw)/2, py=phoneTop+(availH-ph)/2, bez=bezelR*pw;
+    drawPhone(ctx, {px,py,pw,ph, sx:px+bez, sy:py+bez, sw, sh, img, isIOS, frameColor:S.frameColor, shadow:S.shadowOn, font:S.font});
   } else {
     // no frame: just place the screenshot centered with rounded corners
     let sw=availW*(S.phoneScale/100), sh=sw/screenAR;
