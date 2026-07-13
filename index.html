@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Store Shots — генератор скриншотов для App Store и Google Play</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;600&family=Roboto+Serif:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -299,10 +302,11 @@ const PRESETS = [
 const ALL_PRESETS = PRESETS.flatMap(g=>g.items);
 
 const FONTS = [
-  {name:"Sans (system)", css:'-apple-system,system-ui,"Segoe UI",Roboto,sans-serif'},
-  {name:"Serif",        css:'Georgia,"Times New Roman",serif'},
-  {name:"Rounded",      css:'"SF Pro Rounded","Nunito",system-ui,sans-serif'},
-  {name:"Mono",         css:'"SF Mono",Menlo,Consolas,monospace'},
+  {name:"San Francisco — iOS",  css:'"SF Pro Display","SF Pro Text",-apple-system,system-ui,"Helvetica Neue",sans-serif'},
+  {name:"Roboto — Android",     css:'"Roboto","Roboto Flex",system-ui,sans-serif'},
+  {name:"SF Rounded — iOS",     css:'"SF Pro Rounded",-apple-system,"Nunito",system-ui,sans-serif'},
+  {name:"Roboto Serif",         css:'"Roboto Serif",Georgia,"Times New Roman",serif'},
+  {name:"Roboto Mono",          css:'"Roboto Mono","SF Mono",Menlo,Consolas,monospace'},
 ];
 
 /* ---------------- global settings ---------------- */
@@ -992,6 +996,15 @@ slidesEl.appendChild(addSlideCard);
 initControls();
 applyLang();
 makeSlide(LANG==="ru"?"Ваш заголовок здесь":"Your headline here");
+
+// canvas рисует текст только уже загруженными шрифтами — перерисуем, когда Roboto подгрузится
+if(document.fonts && document.fonts.ready){
+  Promise.all([
+    document.fonts.load('700 40px "Roboto"'),
+    document.fonts.load('400 40px "Roboto"'),
+  ]).catch(()=>{});
+  document.fonts.ready.then(()=>renderAll());
+}
 </script>
 </body>
 </html>
