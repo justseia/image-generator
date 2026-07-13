@@ -84,6 +84,10 @@
   .seg button{flex:1; background:transparent; color:var(--muted); border:none; padding:7px; cursor:pointer; font-size:12px; font-weight:600}
   .seg button.on{background:var(--accent); color:#fff}
   .hint{color:var(--muted); font-size:12px; margin-top:4px}
+  .palette{display:flex; flex-wrap:wrap; gap:6px}
+  .palette .sw{width:30px; height:30px; border-radius:7px; cursor:pointer; border:1px solid var(--line); transition:.1s}
+  .palette .sw:hover{transform:scale(1.08); outline:2px solid var(--accent)}
+  .slide textarea.sub{min-height:38px; font-size:12px; margin-top:6px; color:var(--muted)}
   .hidden{display:none !important}
   .muted{color:var(--muted)}
   input[type=range]{width:100%; accent-color:var(--accent)}
@@ -98,8 +102,12 @@
     <button data-lang="ru" class="on">RU</button>
     <button data-lang="en">EN</button>
   </div>
+  <button class="btn ghost" id="saveProjBtn" data-i18n="saveProj">Сохранить</button>
+  <button class="btn ghost" id="openProjBtn" data-i18n="openProj">Открыть</button>
+  <input type="file" accept="application/json,.json" id="openProjInput" class="hidden">
   <button class="btn" id="addSlideBtn" data-i18n="addShot">+ Кадр</button>
-  <button class="btn primary" id="downloadAllBtn" data-i18n="downloadAll">Скачать всё (ZIP)</button>
+  <button class="btn" id="downloadAllBtn" data-i18n="downloadAll">ZIP (текущий)</button>
+  <button class="btn primary" id="downloadAllSizesBtn" data-i18n="downloadAllSizes">ZIP (все размеры)</button>
 </header>
 
 <div class="layout">
@@ -119,6 +127,10 @@
         <button data-bg="gradient" data-i18n="bg_grad">Градиент</button>
         <button data-bg="image" data-i18n="bg_img">Картинка</button>
       </div>
+    </label>
+    <label class="fld">
+      <span class="lbl" data-i18n="l_palette">Палитры</span>
+      <div class="palette" id="palette"></div>
     </label>
     <label class="fld" id="bgColorRow">
       <span class="lbl" data-i18n="l_color">Цвет</span>
@@ -200,6 +212,10 @@
       <input type="range" id="phoneScale" min="45" max="98" value="78">
     </label>
     <label class="fld">
+      <span class="lbl"><span data-i18n="l_tilt">Наклон</span>: <span id="tiltVal">0</span>°</span>
+      <input type="range" id="tilt" min="-20" max="20" value="0">
+    </label>
+    <label class="fld">
       <span class="row" style="align-items:center; gap:8px">
         <input type="checkbox" id="shadowOn" checked style="flex:0 0 auto; width:auto">
         <span data-i18n="l_shadow">Тень под телефоном</span>
@@ -219,35 +235,39 @@
 const I18N = {
   ru:{
     tagline:"Скриншоты для App Store и Google Play прямо в браузере",
-    addShot:"+ Кадр", downloadAll:"Скачать всё (ZIP)",
+    saveProj:"Сохранить", openProj:"Открыть",
+    addShot:"+ Кадр", downloadAll:"ZIP (текущий)", downloadAllSizes:"ZIP (все размеры)",
     h_format:"Формат", l_store:"Магазин / устройство",
     h_bg:"Фон", l_bgtype:"Тип фона", bg_solid:"Цвет", bg_grad:"Градиент", bg_img:"Картинка",
+    l_palette:"Палитры",
     l_color:"Цвет", l_color2:"Второй цвет", l_angle:"Угол градиента", l_bgimg:"Изображение фона",
     drop_bg:"Нажми или перетащи картинку",
     h_text:"Текст", l_pos:"Положение текста", pos_top:"Сверху", pos_bottom:"Снизу",
     l_font:"Шрифт", l_fsize:"Размер", l_tcolor:"Цвет текста", l_bold:"Жирный",
     h_frame:"Рамка телефона", l_frameon:"Показывать рамку", l_framestyle:"Стиль рамки",
-    l_framecolor:"Цвет рамки", l_scale:"Размер телефона", l_shadow:"Тень под телефоном",
-    dropShot:"Нажми или перетащи скриншот", caption_ph:"Заголовок кадра…",
+    l_framecolor:"Цвет рамки", l_scale:"Размер телефона", l_tilt:"Наклон", l_shadow:"Тень под телефоном",
+    dropShot:"Нажми или перетащи скриншот", caption_ph:"Заголовок кадра…", subtitle_ph:"Подзаголовок (необязательно)…",
     download:"Скачать PNG", del:"Удалить", up:"◀", down:"▶",
     placeholder:"Загрузите скриншот",
-    confirmDel:"Удалить этот кадр?"
+    confirmDel:"Удалить этот кадр?", badFile:"Не удалось прочитать файл проекта"
   },
   en:{
     tagline:"App Store & Google Play screenshots right in your browser",
-    addShot:"+ Shot", downloadAll:"Download all (ZIP)",
+    saveProj:"Save", openProj:"Open",
+    addShot:"+ Shot", downloadAll:"ZIP (current)", downloadAllSizes:"ZIP (all sizes)",
     h_format:"Format", l_store:"Store / device",
     h_bg:"Background", l_bgtype:"Background type", bg_solid:"Color", bg_grad:"Gradient", bg_img:"Image",
+    l_palette:"Palettes",
     l_color:"Color", l_color2:"Second color", l_angle:"Gradient angle", l_bgimg:"Background image",
     drop_bg:"Click or drop an image",
     h_text:"Text", l_pos:"Text position", pos_top:"Top", pos_bottom:"Bottom",
     l_font:"Font", l_fsize:"Size", l_tcolor:"Text color", l_bold:"Bold",
     h_frame:"Phone frame", l_frameon:"Show frame", l_framestyle:"Frame style",
-    l_framecolor:"Frame color", l_scale:"Phone size", l_shadow:"Shadow under phone",
-    dropShot:"Click or drop a screenshot", caption_ph:"Frame caption…",
+    l_framecolor:"Frame color", l_scale:"Phone size", l_tilt:"Tilt", l_shadow:"Shadow under phone",
+    dropShot:"Click or drop a screenshot", caption_ph:"Frame caption…", subtitle_ph:"Subtitle (optional)…",
     download:"Download PNG", del:"Delete", up:"◀", down:"▶",
     placeholder:"Upload a screenshot",
-    confirmDel:"Delete this frame?"
+    confirmDel:"Delete this frame?", badFile:"Could not read project file"
   }
 };
 let LANG = "ru";
@@ -291,8 +311,22 @@ const S = {
   bgType:"gradient",
   bgColor:"#5b8cff", bgColor2:"#7c5bff", bgAngle:135, bgImage:null,
   textPos:"top", font:FONTS[0].css, fsize:6.0, textColor:"#ffffff", bold:true,
-  frameOn:true, frameStyle:"ios", frameColor:"#0d0d0f", phoneScale:78, shadowOn:true,
+  frameOn:true, frameStyle:"ios", frameColor:"#0d0d0f", phoneScale:78, tilt:0, shadowOn:true,
 };
+
+/* ---------------- background palettes ---------------- */
+const PALETTES = [
+  {type:"gradient", c:"#5b8cff", c2:"#7c5bff", a:135},
+  {type:"gradient", c:"#ff6b6b", c2:"#ffa36b", a:135},
+  {type:"gradient", c:"#11998e", c2:"#38ef7d", a:135},
+  {type:"gradient", c:"#8360c3", c2:"#2ebf91", a:135},
+  {type:"gradient", c:"#0f2027", c2:"#2c5364", a:135},
+  {type:"gradient", c:"#f093fb", c2:"#f5576c", a:135},
+  {type:"gradient", c:"#141e30", c2:"#243b55", a:135},
+  {type:"solid", c:"#111318"},
+  {type:"solid", c:"#f2f4f8"},
+  {type:"solid", c:"#5b8cff"},
+];
 
 /* ---------------- slides state ---------------- */
 let slideSeq = 0;
@@ -330,8 +364,10 @@ function wrapText(ctx,text,maxW){
   return out;
 }
 
-function drawScene(ctx, slide){
-  const W=S.preset.w, H=S.preset.h;
+function drawScene(ctx, slide, preset, frameStyle){
+  preset = preset || S.preset;
+  frameStyle = frameStyle || S.frameStyle;
+  const W=preset.w, H=preset.h;
   ctx.clearRect(0,0,W,H);
 
   // ---- background ----
@@ -359,7 +395,14 @@ function drawScene(ctx, slide){
   ctx.font = `${S.bold?"700":"400"} ${fontPx}px ${S.font}`;
   const caption = (slide.caption||"").trim();
   const lines = caption ? wrapText(ctx, caption, W-2*margin) : [];
-  const textBlockH = lines.length ? lines.length*lineH + fontPx*0.4 : 0;
+  const subPx = fontPx*0.52, subLineH = subPx*1.3;
+  ctx.font = `400 ${subPx}px ${S.font}`;
+  const subtitle = (slide.subtitle||"").trim();
+  const subLines = subtitle ? wrapText(ctx, subtitle, W-2*margin) : [];
+  const headH = lines.length*lineH;
+  const subH = subLines.length*subLineH;
+  const subGap = (lines.length && subLines.length) ? fontPx*0.3 : 0;
+  const textBlockH = (lines.length||subLines.length) ? headH+subH+subGap+fontPx*0.4 : 0;
 
   // ---- regions ----
   let phoneTop, phoneBottom, textTop;
@@ -379,6 +422,11 @@ function drawScene(ctx, slide){
   const availH = Math.max(10, phoneBottom - phoneTop);
   const img = slide.img;
   const screenAR = img ? img.naturalWidth/img.naturalHeight : 9/19.5;
+
+  // tilt around the phone region center
+  const tiltR = (S.tilt||0)*Math.PI/180;
+  ctx.save();
+  if(tiltR){ const cx=W/2, cy=phoneTop+availH/2; ctx.translate(cx,cy); ctx.rotate(tiltR); ctx.translate(-cx,-cy); }
 
   if(S.frameOn){
     const bezelR = 0.026;               // bezel thickness / phone width
@@ -420,7 +468,7 @@ function drawScene(ctx, slide){
 
     // notch / camera
     ctx.fillStyle="#0a0a0c";
-    if(S.frameStyle==="ios"){
+    if(frameStyle==="ios"){
       const iw=sw*0.34, ih=pw*0.032, ix=sx+(sw-iw)/2, iy=sy+pw*0.022;
       roundRectPath(ctx,ix,iy,iw,ih,ih/2); ctx.fill();
     } else {
@@ -440,13 +488,24 @@ function drawScene(ctx, slide){
     ctx.restore();
   }
 
+  ctx.restore(); // end tilt
+
   // ---- text ----
-  if(lines.length){
-    ctx.fillStyle=S.textColor;
-    ctx.font=`${S.bold?"700":"400"} ${fontPx}px ${S.font}`;
+  if(lines.length || subLines.length){
     ctx.textAlign="center"; ctx.textBaseline="top";
-    let y = S.textPos==="top" ? textTop : textTop;
-    lines.forEach(ln=>{ ctx.fillText(ln, W/2, y); y+=lineH; });
+    let y = textTop;
+    if(lines.length){
+      ctx.fillStyle=S.textColor;
+      ctx.font=`${S.bold?"700":"400"} ${fontPx}px ${S.font}`;
+      lines.forEach(ln=>{ ctx.fillText(ln, W/2, y); y+=lineH; });
+    }
+    if(subLines.length){
+      y += subGap;
+      ctx.fillStyle=S.textColor; ctx.globalAlpha=0.82;
+      ctx.font=`400 ${subPx}px ${S.font}`;
+      subLines.forEach(ln=>{ ctx.fillText(ln, W/2, y); y+=subLineH; });
+      ctx.globalAlpha=1;
+    }
   }
 }
 
@@ -465,7 +524,7 @@ const slidesEl = document.getElementById("slides");
 const addSlideCard = document.createElement("button");
 
 function makeSlide(caption=""){
-  const slide={ id:++slideSeq, img:null, caption, canvas:document.createElement("canvas"), card:null };
+  const slide={ id:++slideSeq, img:null, caption, subtitle:"", canvas:document.createElement("canvas"), card:null };
   slides.push(slide);
   buildCard(slide);
   layoutSlides();
@@ -512,12 +571,19 @@ function buildCard(slide){
   ta.value=slide.caption;
   ta.oninput=()=>{ slide.caption=ta.value; renderSlide(slide); };
 
+  // subtitle
+  const sub=document.createElement("textarea");
+  sub.className="sub";
+  sub.placeholder=t("subtitle_ph");
+  sub.value=slide.subtitle;
+  sub.oninput=()=>{ slide.subtitle=sub.value; renderSlide(slide); };
+
   // download
   const dl=btn("sm", "⬇ "+t("download"), ()=>downloadOne(slide));
   dl.style.width="100%"; dl.style.marginTop="8px";
 
-  card.append(head, wrap, drop, fileInput, ta, dl);
-  slide._refs={num, upBtn, downBtn, ta, drop, dl};
+  card.append(head, wrap, drop, fileInput, ta, sub, dl);
+  slide._refs={num, upBtn, downBtn, ta, sub, drop, dl};
   slidesEl.insertBefore(card, addSlideCard);
 }
 
@@ -548,6 +614,7 @@ function rebuildSlideCards(){
     s._refs.upBtn.textContent=t("up");
     s._refs.downBtn.textContent=t("down");
     s._refs.ta.placeholder=t("caption_ph");
+    s._refs.sub.placeholder=t("subtitle_ph");
     s._refs.dl.textContent="⬇ "+t("download");
     if(!s.img) s._refs.drop.textContent=t("dropShot");
   });
@@ -570,9 +637,10 @@ function loadImageInto(file, cb){
 
 /* ---------------- download ---------------- */
 function sanitize(str){ return (str||"").replace(/[^\p{L}\p{N}\-_ ]/gu,"").trim().replace(/\s+/g,"-").slice(0,40); }
-function fileName(slide,i){
+function fileName(slide,i,preset){
+  preset = preset || S.preset;
   const base=sanitize(slide.caption)||("shot-"+(i+1));
-  return `${S.preset.id}_${String(i+1).padStart(2,"0")}_${base}.png`;
+  return `${preset.id}_${String(i+1).padStart(2,"0")}_${base}.png`;
 }
 function downloadOne(slide){
   const i=slides.indexOf(slide);
@@ -591,8 +659,71 @@ async function downloadAll(){
     const buf=new Uint8Array(await blob.arrayBuffer());
     files.push({name:fileName(slides[i],i), data:buf});
   }
-  const zip=buildZip(files);
-  saveBlob(zip, `${S.preset.id}_screenshots.zip`);
+  saveBlob(buildZip(files), `${S.preset.id}_screenshots.zip`);
+}
+
+// export every slide at every preset size, grouped into folders
+async function downloadAllSizes(){
+  const btn=document.getElementById("downloadAllSizesBtn");
+  const old=btn.textContent; btn.textContent="…"; btn.disabled=true;
+  try{
+    const files=[];
+    const tmp=document.createElement("canvas");
+    const ctx=tmp.getContext("2d");
+    for(const preset of ALL_PRESETS){
+      for(let i=0;i<slides.length;i++){
+        if(tmp.width!==preset.w||tmp.height!==preset.h){ tmp.width=preset.w; tmp.height=preset.h; }
+        drawScene(ctx, slides[i], preset, preset.fr);
+        const blob=await new Promise(res=>tmp.toBlob(res,"image/png"));
+        const buf=new Uint8Array(await blob.arrayBuffer());
+        files.push({name:`${preset.id}/${fileName(slides[i],i,preset)}`, data:buf});
+      }
+    }
+    saveBlob(buildZip(files), "storeshots_all-sizes.zip");
+  } finally { btn.textContent=old; btn.disabled=false; }
+}
+
+/* ---------------- save / load project ---------------- */
+function imgToDataURL(img){
+  if(!img) return null;
+  const c=document.createElement("canvas");
+  c.width=img.naturalWidth; c.height=img.naturalHeight;
+  c.getContext("2d").drawImage(img,0,0);
+  return c.toDataURL("image/png");
+}
+function saveProject(){
+  const settings={...S, preset:S.preset.id}; delete settings.bgImage;
+  const proj={
+    app:"StoreShots", v:1, settings,
+    bgImage: S.bgType==="image" ? imgToDataURL(S.bgImage) : null,
+    slides: slides.map(s=>({ caption:s.caption, subtitle:s.subtitle, img:imgToDataURL(s.img) })),
+  };
+  saveBlob(new Blob([JSON.stringify(proj)],{type:"application/json"}), "storeshots-project.json");
+}
+function openProject(file){
+  const r=new FileReader();
+  r.onload=()=>{ try{ applyProject(JSON.parse(r.result)); }catch(e){ alert(t("badFile")); } };
+  r.readAsText(file);
+}
+function applyProject(proj){
+  const st=proj.settings||{};
+  Object.assign(S, st);
+  S.preset = ALL_PRESETS.find(p=>p.id===st.preset) || ALL_PRESETS[0];
+  S.bgImage=null;
+  const finish=()=>{
+    slides.slice().forEach(s=>s.card.remove());
+    slides.length=0;
+    (proj.slides||[]).forEach(sd=>{
+      const slide=makeSlide(sd.caption||"");
+      slide.subtitle=sd.subtitle||"";
+      slide._refs.sub.value=slide.subtitle;
+      if(sd.img){ const im=new Image(); im.onload=()=>renderSlide(slide); im.src=sd.img; slide.img=im; slide._refs.drop.textContent="✓ image"; }
+    });
+    if(!slides.length) makeSlide();
+    syncAllUI(); renderAll();
+  };
+  if(proj.bgImage){ const im=new Image(); im.onload=()=>{ S.bgImage=im; finish(); }; im.src=proj.bgImage; }
+  else finish();
 }
 
 /* ---- minimal ZIP (store, no compression), pure JS ---- */
@@ -686,9 +817,56 @@ function seg(id,attr,key,after){
   });
 }
 
+function bgCss(p){ return p.type==="gradient" ? `linear-gradient(135deg, ${p.c}, ${p.c2})` : p.c; }
+function buildPalette(){
+  const el=document.getElementById("palette"); el.innerHTML="";
+  PALETTES.forEach(p=>{
+    const sw=document.createElement("div"); sw.className="sw";
+    sw.style.background=bgCss(p);
+    sw.title = p.type==="gradient" ? `${p.c} → ${p.c2}` : p.c;
+    sw.onclick=()=>applyPalette(p);
+    el.appendChild(sw);
+  });
+}
+function applyPalette(p){
+  S.bgType=p.type; S.bgColor=p.c;
+  if(p.type==="gradient"){ S.bgColor2=p.c2; S.bgAngle=p.a; }
+  syncBgUI(); renderAll();
+}
+function syncBgUI(){
+  document.getElementById("bgColor").value=S.bgColor;
+  document.getElementById("bgColorHex").value=S.bgColor;
+  document.getElementById("bgColor2").value=S.bgColor2;
+  document.getElementById("bgColor2Hex").value=S.bgColor2;
+  document.getElementById("bgAngle").value=S.bgAngle;
+  document.getElementById("bgAngleVal").textContent=S.bgAngle;
+  document.querySelectorAll("#bgTypeSeg button").forEach(b=>b.classList.toggle("on",b.dataset.bg===S.bgType));
+  document.getElementById("bgColorRow").classList.toggle("hidden", S.bgType==="image");
+  document.getElementById("bgColor2Row").classList.toggle("hidden", S.bgType!=="gradient");
+  document.getElementById("bgAngleRow").classList.toggle("hidden", S.bgType!=="gradient");
+  document.getElementById("bgImageRow").classList.toggle("hidden", S.bgType!=="image");
+}
+function syncAllUI(){
+  document.getElementById("presetSel").value=S.preset.id;
+  updateSizeHint();
+  const fi=FONTS.findIndex(f=>f.css===S.font); document.getElementById("fontSel").value=String(fi<0?0:fi);
+  document.getElementById("fsize").value=S.fsize; document.getElementById("fsizeVal").textContent=(+S.fsize).toFixed(1);
+  document.getElementById("phoneScale").value=S.phoneScale; document.getElementById("scaleVal").textContent=S.phoneScale;
+  document.getElementById("tilt").value=S.tilt; document.getElementById("tiltVal").textContent=S.tilt;
+  document.getElementById("textColor").value=S.textColor; document.getElementById("textColorHex").value=S.textColor;
+  document.getElementById("frameColor").value=S.frameColor; document.getElementById("frameColorHex").value=S.frameColor;
+  document.getElementById("textBold").checked=!!S.bold;
+  document.getElementById("frameOn").checked=!!S.frameOn;
+  document.getElementById("shadowOn").checked=!!S.shadowOn;
+  document.querySelectorAll("#textPosSeg button").forEach(b=>b.classList.toggle("on",b.dataset.pos===S.textPos));
+  document.querySelectorAll("#frameStyleSeg button").forEach(b=>b.classList.toggle("on",b.dataset.fr===S.frameStyle));
+  syncBgUI();
+}
+
 function initControls(){
   buildPresetSelect();
   buildFontSelect();
+  buildPalette();
   document.getElementById("fontSel").value="0";
 
   linkColor("bgColor","bgColorHex","bgColor");
@@ -711,6 +889,8 @@ function initControls(){
   fs.oninput=()=>{ S.fsize=+fs.value; document.getElementById("fsizeVal").textContent=(+fs.value).toFixed(1); renderAll(); };
   const ps=document.getElementById("phoneScale");
   ps.oninput=()=>{ S.phoneScale=+ps.value; document.getElementById("scaleVal").textContent=ps.value; renderAll(); };
+  const tl=document.getElementById("tilt");
+  tl.oninput=()=>{ S.tilt=+tl.value; document.getElementById("tiltVal").textContent=tl.value; renderAll(); };
 
   document.getElementById("textBold").onchange=e=>{ S.bold=e.target.checked; renderAll(); };
   document.getElementById("frameOn").onchange=e=>{ S.frameOn=e.target.checked; renderAll(); };
@@ -729,6 +909,13 @@ function initControls(){
 
   document.getElementById("addSlideBtn").onclick=()=>makeSlide();
   document.getElementById("downloadAllBtn").onclick=downloadAll;
+  document.getElementById("downloadAllSizesBtn").onclick=downloadAllSizes;
+
+  // save / open project
+  document.getElementById("saveProjBtn").onclick=saveProject;
+  const openInput=document.getElementById("openProjInput");
+  document.getElementById("openProjBtn").onclick=()=>openInput.click();
+  openInput.onchange=e=>{ const f=e.target.files[0]; if(f) openProject(f); e.target.value=""; };
 
   document.querySelectorAll("#langSeg button").forEach(b=>{
     b.onclick=()=>{ LANG=b.dataset.lang; applyLang(); };
