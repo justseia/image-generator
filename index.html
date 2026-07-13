@@ -528,18 +528,19 @@ function drawScene(ctx, slide, preset, frameStyle){
     const isIOS = frameStyle==="ios";
     const ar = img ? screenAR : (isIOS ? 9/19.5 : 9/20);
     const bezelR = 0.036;               // body edge -> screen (rail + black bezel)
-    let pw = availW * (S.phoneScale/100);
-    let sw = pw*(1-2*bezelR);
-    let sh = sw/ar;
-    let ph = sh + 2*(bezelR*pw);
-    if(ph>availH){ const k=availH/ph; pw*=k; sw*=k; sh*=k; ph*=k; }
-    const px=(W-pw)/2, py=phoneTop+(availH-ph)/2, bez=bezelR*pw;
+    // size depends only on width — never shrinks because of long text
+    const pw = availW * (S.phoneScale/100);
+    const sw = pw*(1-2*bezelR);
+    const sh = sw/ar;
+    const ph = sh + 2*(bezelR*pw);
+    const bez = bezelR*pw;
+    // fits: center in the free area; too tall: anchor under text and let it run off the bottom
+    const px=(W-pw)/2, py = ph<=availH ? phoneTop+(availH-ph)/2 : phoneTop;
     drawPhone(ctx, {px,py,pw,ph, sx:px+bez, sy:py+bez, sw, sh, img, isIOS, frameColor:S.frameColor, shadow:S.shadowOn, font:S.font});
   } else {
-    // no frame: just place the screenshot centered with rounded corners
-    let sw=availW*(S.phoneScale/100), sh=sw/screenAR;
-    if(sh>availH){ const k=availH/sh; sw*=k; sh*=k; }
-    const sx=(W-sw)/2, sy=phoneTop+(availH-sh)/2;
+    // no frame: place the screenshot; keep its size, push down if text is long
+    const sw=availW*(S.phoneScale/100), sh=sw/screenAR;
+    const sx=(W-sw)/2, sy = sh<=availH ? phoneTop+(availH-sh)/2 : phoneTop;
     ctx.save();
     if(S.shadowOn){ ctx.shadowColor="rgba(0,0,0,.3)"; ctx.shadowBlur=sw*0.06; ctx.shadowOffsetY=sw*0.03; }
     roundRectPath(ctx,sx,sy,sw,sh,sw*0.06);
